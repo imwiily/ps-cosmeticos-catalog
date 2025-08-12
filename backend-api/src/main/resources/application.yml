@@ -1,0 +1,10 @@
+app:
+  storage:
+    imageRoot: "/Users/wiily/Personal Projects/Orders/PS Cosmeticos/PsAPI/src/main/resources/images/"
+    imageCategoryRoot: "/Users/wiily/Personal Projects/Orders/PS Cosmeticos/PsAPI/src/main/resources/images/category/"
+    imageProductRoot: "/Users/wiily/Personal Projects/Orders/PS Cosmeticos/PsAPI/src/main/resources/images/products/"
+  api:
+    version: "v1"
+    externalServiceUrl: "https://exemplo.com"
+    domainIp: "localhost:8080"
+    baseIp: "localhost:8080"
