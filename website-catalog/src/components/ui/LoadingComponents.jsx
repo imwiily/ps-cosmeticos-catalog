@@ -1,4 +1,4 @@
-// src/components/ui/LoadingSpinner.js
+// src/components/ui/LoadingComponents.jsx
 import React from 'react';
 
 export const LoadingSpinner = ({ size = 'md', className = '' }) => {
@@ -18,7 +18,6 @@ export const LoadingSpinner = ({ size = 'md', className = '' }) => {
   );
 };
 
-// src/components/ui/ProductCardSkeleton.js
 export const ProductCardSkeleton = () => (
   <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden">
     <div className="aspect-[4/3] flex flex-col">
@@ -42,7 +41,6 @@ export const ProductCardSkeleton = () => (
   </div>
 );
 
-// src/components/ui/CategoryCardSkeleton.js
 export const CategoryCardSkeleton = () => (
   <div className="flex-none w-80 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
     <div className="w-full h-60 bg-gray-200 animate-pulse" />
@@ -58,7 +56,6 @@ export const CategoryCardSkeleton = () => (
   </div>
 );
 
-// src/components/ui/ErrorMessage.js
 export const ErrorMessage = ({ 
   error, 
   onRetry, 
@@ -84,7 +81,6 @@ export const ErrorMessage = ({
   </div>
 );
 
-// src/components/ui/EmptyState.js
 export const EmptyState = ({ 
   title = "Nenhum produto encontrado", 
   description = "Tente ajustar os filtros ou navegue por outras categorias.", 
@@ -98,7 +94,6 @@ export const EmptyState = ({
   </div>
 );
 
-// src/components/ui/LoadingOverlay.js
 export const LoadingOverlay = ({ isVisible, message = "Carregando..." }) => {
   if (!isVisible) return null;
 
