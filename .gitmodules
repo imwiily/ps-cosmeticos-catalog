@@ -1,0 +1,3 @@
+[submodule "website-catalog/website-catalog"]
+	path = website-catalog/website-catalog
+	url = https://github.com/imwiily/ps-cosmeticos-catalog
