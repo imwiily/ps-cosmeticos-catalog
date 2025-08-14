@@ -13,13 +13,6 @@ target/
 .springBeans
 .sts4-cache
 
-## DOCKER ##
-.dockerignore
-Dockerfile
-application-docker.yml
-docker-compose.yml
-start.sh
-
 ### IMG ###
 src/main/resources/images/category
 src/main/resources/images/products
