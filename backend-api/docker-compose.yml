@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: db-postgres
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: allaya_company_ps_cosmeticos_api
+      POSTGRES_USER: psuser
+      POSTGRES_PASSWORD: pspass
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - psnet
+
+  app:
+    container_name: psapi-app
+    platform: linux/amd64
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - psnet
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_NAME: allaya_company_ps_cosmeticos_api
+      DB_USER: psuser
+      DB_PASSWORD: pspass
+
+volumes:
+  postgres-data:
+
+networks:
+  psnet:
