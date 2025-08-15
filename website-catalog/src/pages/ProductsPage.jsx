@@ -34,43 +34,35 @@ const ProductsPage = ({ onProductClick, onBackToHome, initialFilters = {} }) => 
     loading: subcategoriasLoading
   } = useSubcategorias();
 
-  // ✅ CORRIGIDO: Filtrar subcategorias baseado na categoria ativa
+  // Filtrar subcategorias baseado na categoria ativa
   const subcategoriasFiltradas = subcategorias.filter(sub => {
     // Só mostra subcategorias se uma categoria específica estiver selecionada (não "Todos")
     if (categoriaAtiva === "Todos") return false;
     
-    // ✅ CORREÇÃO: Verificação robusta das propriedades
+    // Verificação robusta das propriedades
     if (!sub || !sub.categoria) {
-      console.warn('⚠️ Subcategoria sem categoria:', sub);
       return false;
     }
 
     const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
     
     if (!categoriaNome) {
-      console.warn('⚠️ Nome de categoria faltando na subcategoria:', sub);
       return false;
     }
 
     const match = categoriaNome.toLowerCase() === categoriaAtiva.toLowerCase();
-    
-    if (match) {
-      console.log('✅ Subcategoria filtrada:', sub.nome, 'para categoria:', categoriaAtiva);
-    }
     
     return match;
   });
 
   // Handler para mudança de categoria (limpa subcategoria)
   const handleCategoriaChange = (categoria) => {
-    console.log('🗂️ Mudando categoria para:', categoria);
     setCategoriaAtiva(categoria);
     setSubcategoriaAtiva("Todas"); // Reset subcategoria quando muda categoria
   };
 
   // Handler para mudança de subcategoria
   const handleSubcategoriaChange = (subcategoria) => {
-    console.log('🏷️ Mudando subcategoria para:', subcategoria);
     setSubcategoriaAtiva(subcategoria);
   };
 

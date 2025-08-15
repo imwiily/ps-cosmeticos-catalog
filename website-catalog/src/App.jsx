@@ -1,4 +1,4 @@
-// src/App.jsx - CORREÇÃO do filtro de subcategorias
+// src/App.jsx - VERSÃO LIMPA SEM DEBUGS
 import React, { useState } from 'react';
 import { LoadingOverlay } from './components/ui/LoadingComponents';
 import { useCustomStyles } from './utils/helpers';
@@ -37,19 +37,19 @@ const App = () => {
   // Adiciona estilos customizados
   useCustomStyles();
 
-  // ✅ CORRIGIDO: Filtrar subcategorias baseado na categoria selecionada
+  // Filtrar subcategorias baseado na categoria selecionada
   const getSubcategoriasFiltradas = () => {
     if (!selectedCategory || !subcategorias.length) {
       return [];
     }
 
     const subcategoriasFiltradas = subcategorias.filter(sub => {
-      // ✅ CORREÇÃO: Verificar se sub.categoria existe e tem o campo nome
+      // Verificar se sub.categoria existe e tem o campo nome
       if (!sub || !sub.categoria) {
         return false;
       }
 
-      // ✅ CORREÇÃO: Verificar se categoria.nome existe antes de chamar toLowerCase
+      // Verificar se categoria.nome existe antes de chamar toLowerCase
       const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
       const selectedCategoryNome = selectedCategory.nome || '';
 
@@ -58,9 +58,6 @@ const App = () => {
       }
 
       const match = categoriaNome.toLowerCase() === selectedCategoryNome.toLowerCase();
-      
-      if (match) {
-      }
       
       return match;
     });
@@ -73,7 +70,7 @@ const App = () => {
     setIsTransitioning(true);
     
     try {
-      // ✅ CORREÇÃO: Verificar se subcategorias estão carregadas antes de filtrar
+      // Verificar se subcategorias estão carregadas antes de filtrar
       if (subcategoriasLoading) {
         // Se subcategorias ainda estão carregando, ir direto para produtos
         navigateToProducts(categoria);
@@ -82,7 +79,7 @@ const App = () => {
 
       // Verificar se a categoria tem subcategorias
       const subcategoriasDisponiveis = subcategorias.filter(sub => {
-        // ✅ CORREÇÃO: Verificação mais robusta
+        // Verificação mais robusta
         if (!sub || !sub.categoria) return false;
         
         const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
@@ -91,7 +88,6 @@ const App = () => {
         return categoriaNome && selectedCategoryNome && 
                categoriaNome.toLowerCase() === selectedCategoryNome.toLowerCase();
       });
-
 
       if (subcategoriasDisponiveis.length > 0) {
         // Navegar para subcategorias

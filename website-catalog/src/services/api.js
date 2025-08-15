@@ -1,4 +1,4 @@
-// src/services/api.js - VERSÃO COM DEBUG DE IMAGENS
+// src/services/api.js - VERSÃO LIMPA SEM DEBUGS
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 class ApiService {
@@ -20,7 +20,6 @@ class ApiService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('API Request Error:', error);
       // Retornar dados vazios em caso de erro para evitar quebras
       return {
         success: false,
@@ -30,33 +29,26 @@ class ApiService {
     }
   }
 
-  // ✅ CORREÇÃO: Método getImageUrl melhorado com debug
+  // Método getImageUrl melhorado
   getImageUrl(imageUrl, type = 'DISPLAY') {
-    console.log('🔗 getImageUrl chamado:', { imageUrl, type });
-    
     if (!imageUrl) {
-      console.warn('⚠️ imageUrl está vazio');
       return null;
     }
     
     // Se imageUrl já é uma URL completa com protocolo
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      const finalUrl = `${imageUrl}?type=${type}`;
-      console.log('✅ URL completa gerada:', finalUrl);
-      return finalUrl;
+      return `${imageUrl}?type=${type}`;
     }
     
     // Se é apenas o nome do arquivo ou caminho relativo
-    const finalUrl = `${API_BASE_URL}/image/${imageUrl}?type=${type}`;
-    console.log('✅ URL do endpoint gerada:', finalUrl);
-    return finalUrl;
+    return `${API_BASE_URL}/image/${imageUrl}?type=${type}`;
   }
 
-  // ✅ CORRIGIDO: Pegar todos os produtos COM parâmetro category
+  // Pegar todos os produtos COM parâmetro category
   async getProdutos(page = 0, size = 12, category = 'todos') {
     const response = await this.makeRequest(`/produtos?page=${page}&size=${size}&category=${category}`);
     
-    // ✅ CORRIGIDO: A API retorna { success: boolean, data: {...} }
+    // A API retorna { success: boolean, data: {...} }
     if (response.success && response.data) {
       return response.data;
     }
@@ -64,11 +56,11 @@ class ApiService {
     return { content: [], page: {} };
   }
 
-  // ✅ CORRIGIDO: Produto por ID 
+  // Produto por ID 
   async getProdutoPorId(id) {
     const response = await this.makeRequest(`/produtos/${id}`);
     
-    // ✅ CORRIGIDO: A API retorna { success: boolean, data: {...} }
+    // A API retorna { success: boolean, data: {...} }
     if (response.success && response.data) {
       return response.data;
     }
@@ -80,7 +72,7 @@ class ApiService {
   async getCategorias() {
     const response = await this.makeRequest('/categorias?page=0&size=50');
     
-    // ✅ CORRIGIDO: Categorias retornam PagedModel diretamente
+    // Categorias retornam PagedModel diretamente
     if (response.content) {
       return response.content;
     }
@@ -92,7 +84,7 @@ class ApiService {
   async getSubcategorias() {
     const response = await this.makeRequest('/subcategorias?page=0&size=100');
     
-    // ✅ CORRIGIDO: Subcategorias retornam PagedModel diretamente
+    // Subcategorias retornam PagedModel diretamente
     if (response.content) {
       return response.content;
     }
@@ -108,30 +100,20 @@ class ApiService {
     return Array.isArray(response) ? response : [];
   }
 
-  // ✅ CORREÇÃO: transformProdutoData com debug completo de imagens
+  // Transformar dados de produto da API
   transformProdutoData(apiProduct) {
     // Verificações de segurança para evitar erros
     if (!apiProduct) {
-      console.warn('Produto vazio recebido da API');
       return null;
     }
 
-    console.log('🔍 DEBUG produto da API:', apiProduct);
-
-    // ✅ Mapear campos da API corretamente
+    // Mapear campos da API corretamente
     let price = apiProduct.price || apiProduct.preco || 0;
     let discountPrice = apiProduct.discountPrice || apiProduct.precoDesconto || null;
     const name = apiProduct.name || apiProduct.nome || 'Produto sem nome';
     const description = apiProduct.description || apiProduct.descricao || 'Sem descrição disponível';
 
-    console.log('🔍 Debug preços antes da conversão:', { 
-      price, 
-      discountPrice, 
-      priceType: typeof price, 
-      discountPriceType: typeof discountPrice 
-    });
-
-    // ✅ CORREÇÃO: Converter preços para números de forma mais robusta
+    // Converter preços para números de forma mais robusta
     try {
       // Tratar price
       if (price !== null && price !== undefined) {
@@ -139,12 +121,10 @@ class ApiService {
           // Remove R$, espaços e vírgulas, substitui vírgula por ponto
           const cleanPrice = price.replace(/[R$\s]/g, '').replace(',', '.');
           price = parseFloat(cleanPrice);
-          console.log('🔄 Price convertido de string:', cleanPrice, '->', price);
         }
         
         // Garantir que é um número válido
         if (isNaN(price) || !isFinite(price)) {
-          console.warn('⚠️ Price inválido, usando 0:', price);
           price = 0;
         }
       } else {
@@ -156,40 +136,27 @@ class ApiService {
         if (typeof discountPrice === 'string') {
           const cleanDiscountPrice = discountPrice.replace(/[R$\s]/g, '').replace(',', '.');
           discountPrice = parseFloat(cleanDiscountPrice);
-          console.log('🔄 DiscountPrice convertido de string:', cleanDiscountPrice, '->', discountPrice);
         }
         
         // Garantir que é um número válido
         if (isNaN(discountPrice) || !isFinite(discountPrice)) {
-          console.warn('⚠️ DiscountPrice inválido, usando null:', discountPrice);
           discountPrice = null;
         }
       }
 
-      console.log('✅ Preços após conversão:', { price, discountPrice });
-
     } catch (error) {
-      console.error('❌ Erro ao converter preços:', error);
       price = 0;
       discountPrice = null;
     }
 
-    // ✅ PROCESSAR IMAGENS COM DEBUG DETALHADO
-    console.log('🖼️ Campos de imagem disponíveis na API:');
-    console.log('📷 imageURL:', apiProduct.imageURL);
-    console.log('📷 imageUrl:', apiProduct.imageUrl);
-    console.log('📷 image_url:', apiProduct.image_url);
-    console.log('📷 imagem:', apiProduct.imagem);
-
+    // Processar imagens
     const imageURL = apiProduct.imageURL || 
                      apiProduct.imageUrl || 
                      apiProduct.image_url || 
                      apiProduct.imagem || 
                      null;
-    
-    console.log('🔗 imageURL final escolhida:', imageURL);
 
-    // ✅ Criar o objeto produto transformado
+    // Criar o objeto produto transformado
     const produtoTransformado = {
       id: apiProduct.id || Math.random().toString(36).substr(2, 9),
       nome: name,
@@ -200,7 +167,7 @@ class ApiService {
         ? `R$ ${discountPrice.toFixed(2).replace('.', ',')}` 
         : null,
       
-      // ✅ IMAGENS COM DEBUG
+      // Imagens
       imagem: this.getImageUrl(imageURL, 'DISPLAY'),
       imagemIcone: this.getImageUrl(imageURL, 'ICON'),
       imagemMedia: this.getImageUrl(imageURL, 'MID-DISPLAY'),
@@ -221,12 +188,6 @@ class ApiService {
       avaliacoes: Math.floor(Math.random() * 200) + 50,
     };
 
-    console.log('✅ URLs de imagem geradas:');
-    console.log('📷 imagem (DISPLAY):', produtoTransformado.imagem);
-    console.log('📷 imagemMedia (MID-DISPLAY):', produtoTransformado.imagemMedia);
-    console.log('📷 imagemIcone (ICON):', produtoTransformado.imagemIcone);
-
-    console.log('✅ Produto transformado final:', produtoTransformado);
     return produtoTransformado;
   }
 
@@ -247,10 +208,10 @@ class ApiService {
   transformSubcategoriaData(apiSubcategory) {
     return {
       id: apiSubcategory.id,
-      nome: apiSubcategory.name, // ✅ API usa 'name', não 'nome'
+      nome: apiSubcategory.name, // API usa 'name', não 'nome'
       categoria: {
         id: apiSubcategory.category_info?.id,
-        nome: apiSubcategory.category_info?.name // ✅ API usa 'name', não 'nome'
+        nome: apiSubcategory.category_info?.name // API usa 'name', não 'nome'
       },
       slug: apiSubcategory.slug || '',
       descricao: apiSubcategory.description || '',
@@ -281,7 +242,6 @@ class ApiService {
         page: response.page
       };
     } catch (error) {
-      console.error('Erro ao buscar produtos por categoria:', error);
       return { content: [], page: {} };
     }
   }
@@ -310,7 +270,6 @@ class ApiService {
         }
       };
     } catch (error) {
-      console.error('Erro ao buscar produtos por subcategoria:', error);
       return { content: [], page: {} };
     }
   }
