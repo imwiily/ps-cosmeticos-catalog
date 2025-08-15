@@ -1,18 +1,10 @@
-/**
- * index.js - Ponto de Entrada da Aplicação
- * Configuração principal e renderização do React
- */
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import App from './App.jsx';
 
-// Configurações globais
-console.log('🚀 Iniciando Dashboard de Gestão de Categorias v2.3.28');
+console.log('🚀 Iniciando Dashboard com Vite (JSX)...');
 
-// Error boundary para capturar erros globais
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -24,7 +16,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('💥 Erro capturado pelo Error Boundary:', error, errorInfo);
+    console.error('💥 Erro:', error, errorInfo);
   }
 
   render() {
@@ -45,7 +37,7 @@ class ErrorBoundary extends React.Component {
             >
               Recarregar Página
             </button>
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.DEV && (
               <details className="mt-4 text-left text-sm text-gray-600">
                 <summary className="cursor-pointer font-medium">Detalhes do erro</summary>
                 <pre className="mt-2 bg-gray-100 p-2 rounded text-xs overflow-auto">
@@ -57,12 +49,10 @@ class ErrorBoundary extends React.Component {
         </div>
       );
     }
-
     return this.props.children;
   }
 }
 
-// Criar root e renderizar aplicação
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
@@ -71,13 +61,9 @@ root.render(
   </ErrorBoundary>
 );
 
-// Métricas de performance (opcional)
-reportWebVitals(console.log);
-
-// Log de inicialização
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
   console.log('🔧 Modo desenvolvimento ativo');
-  console.log('📍 API Base URL:', process.env.REACT_APP_API_URL || 'http://localhost:8080');
+  console.log('📍 API Base URL:', import.meta.env.VITE_API_URL || 'http://localhost:8080');
 }
 
 console.log('✅ Aplicação inicializada com sucesso');
