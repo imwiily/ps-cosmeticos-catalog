@@ -1,8 +1,9 @@
-// src/App.jsx - VERSÃO LIMPA SEM DEBUGS
-import React, { useState } from 'react';
+// src/App.jsx - COM SUPORTE À NAVEGAÇÃO DO NAVEGADOR
+import React, { useState, useEffect } from 'react';
 import { LoadingOverlay } from './components/ui/LoadingComponents';
 import { useCustomStyles } from './utils/helpers';
 import { useCatalogNavigation } from './hooks/useCatalogNavigation.jsx';
+import { useBrowserNavigation } from './hooks/useBrowserNavigation.jsx';
 
 // Importar as novas páginas do catálogo
 import CatalogHomePage from './pages/CatalogHomePage';
@@ -34,8 +35,39 @@ const App = () => {
   const { categorias, loading: categoriasLoading, error: categoriasError } = useCategorias();
   const { subcategorias, loading: subcategoriasLoading, error: subcategoriasError } = useSubcategorias();
 
+  // Hook para gerenciar navegação do navegador
+  const {
+    updateUrl,
+    parseCurrentUrl,
+    navigateToHomeWithHistory,
+    navigateToCategoriesWithHistory,
+    navigateToSubcategoriesWithHistory,
+    navigateToProductsWithHistory,
+    navigateToProductWithHistory
+  } = useBrowserNavigation(currentPage, {
+    navigateToHome,
+    navigateToCategories,
+    navigateToProducts,
+    navigateToSubcategories,
+    selectedCategory,
+    selectedSubcategory,
+    selectedProduct,
+    setSelectedProduct
+  });
+
   // Adiciona estilos customizados
   useCustomStyles();
+
+  // Inicializar com base na URL atual
+  useEffect(() => {
+    const urlParams = parseCurrentUrl();
+    
+    // Se há parâmetros na URL, inicializar a aplicação baseado neles
+    if (urlParams.page !== 'home') {
+      // Aqui você pode implementar a lógica para carregar o estado inicial
+      // baseado nos parâmetros da URL se necessário
+    }
+  }, [parseCurrentUrl]);
 
   // Filtrar subcategorias baseado na categoria selecionada
   const getSubcategoriasFiltradas = () => {
@@ -73,7 +105,7 @@ const App = () => {
       // Verificar se subcategorias estão carregadas antes de filtrar
       if (subcategoriasLoading) {
         // Se subcategorias ainda estão carregando, ir direto para produtos
-        navigateToProducts(categoria);
+        navigateToProductsWithHistory(categoria);
         return;
       }
 
@@ -91,14 +123,14 @@ const App = () => {
 
       if (subcategoriasDisponiveis.length > 0) {
         // Navegar para subcategorias
-        navigateToSubcategories(categoria);
+        navigateToSubcategoriesWithHistory(categoria);
       } else {
         // Ir direto para produtos
-        navigateToProducts(categoria);
+        navigateToProductsWithHistory(categoria);
       }
     } catch (error) {
       // Em caso de erro, ir direto para produtos
-      navigateToProducts(categoria);
+      navigateToProductsWithHistory(categoria);
     } finally {
       setTimeout(() => setIsTransitioning(false), 300);
     }
@@ -109,7 +141,7 @@ const App = () => {
     setIsTransitioning(true);
     
     try {
-      navigateToProducts(selectedCategory, subcategoria);
+      navigateToProductsWithHistory(selectedCategory, subcategoria);
     } finally {
       setTimeout(() => setIsTransitioning(false), 300);
     }
@@ -120,7 +152,7 @@ const App = () => {
     setIsTransitioning(true);
     
     try {
-      navigateToProducts(selectedCategory);
+      navigateToProductsWithHistory(selectedCategory);
     } finally {
       setTimeout(() => setIsTransitioning(false), 300);
     }
@@ -136,13 +168,16 @@ const App = () => {
       
       if (!produto.descricaoCompleta || !produto.ingredientes) {
         const apiService = (await import('./services/api')).default;
-        produtoCompleto = await apiService.getProdutoPorId(produto.id);
-        produtoCompleto = apiService.transformProdutoData(produtoCompleto);
+        const produtoApi = await apiService.getProdutoPorId(produto.id);
+        if (produtoApi) {
+          produtoCompleto = apiService.transformProdutoData(produtoApi);
+        }
       }
 
-      setSelectedProduct(produtoCompleto);
+      // Usar a função com histórico
+      navigateToProductWithHistory(produtoCompleto, selectedCategory, selectedSubcategory);
     } catch (error) {
-      setSelectedProduct(produto);
+      navigateToProductWithHistory(produto, selectedCategory, selectedSubcategory);
     } finally {
       setIsTransitioning(false);
     }
@@ -166,7 +201,7 @@ const App = () => {
           product={selectedProduct}
           onBackToHome={() => {
             handleBackFromProduct();
-            navigateToHome();
+            navigateToHomeWithHistory();
           }}
           onBackToProducts={() => {
             handleBackFromProduct();
@@ -189,7 +224,7 @@ const App = () => {
           <CategoriesSelectionPage
             categorias={categorias}
             onCategorySelect={handleCategorySelect}
-            onBackToHome={navigateToHome}
+            onBackToHome={navigateToHomeWithHistory}
             loading={categoriasLoading}
             error={categoriasError}
           />
@@ -202,8 +237,8 @@ const App = () => {
             subcategorias={getSubcategoriasFiltradas()}
             onSubcategorySelect={handleSubcategorySelect}
             onViewAllProducts={handleViewAllProducts}
-            onBackToCategories={navigateToCategories}
-            onBackToHome={navigateToHome}
+            onBackToCategories={navigateToCategoriesWithHistory}
+            onBackToHome={navigateToHomeWithHistory}
             loading={subcategoriasLoading}
             error={subcategoriasError}
           />
@@ -213,21 +248,21 @@ const App = () => {
         return (
           <ProductsPage
             onProductClick={handleProductClick}
-            onBackToHome={navigateToHome}
+            onBackToHome={navigateToHomeWithHistory}
             initialFilters={{
               categoria: selectedCategory?.nome || 'Todos',
               subcategoria: selectedSubcategory?.nome || 'Todas'
             }}
             breadcrumbPath={getBreadcrumbPath()}
-            onNavigateToCategories={navigateToCategories}
-            onNavigateToSubcategories={() => navigateToSubcategories(selectedCategory)}
+            onNavigateToCategories={navigateToCategoriesWithHistory}
+            onNavigateToSubcategories={() => navigateToSubcategoriesWithHistory(selectedCategory)}
           />
         );
 
       default: // 'home'
         return (
           <CatalogHomePage
-            onNavigateToCategories={navigateToCategories}
+            onNavigateToCategories={navigateToCategoriesWithHistory}
             categorias={categorias}
             loading={categoriasLoading}
             error={categoriasError}
