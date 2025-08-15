@@ -1,24 +1,100 @@
+// src/App.jsx - Versão Final com Sistema de Catálogo Hierárquico
 import React, { useState } from 'react';
-import HomePage from './components/HomePage';
-import ProductsPage from './pages/ProductsPage';
-import ProductDetailPage from './components/ProductDetailPage';
 import { LoadingOverlay } from './components/ui/LoadingComponents';
 import { useCustomStyles } from './utils/helpers';
+import { useCatalogNavigation } from './hooks/useCatalogNavigation.jsx';
+
+// Importar as novas páginas do catálogo
+import CatalogHomePage from './pages/CatalogHomePage';
+import CategoriesSelectionPage from './pages/CategoriesSelectionPage';
+import SubcategoriesSelectionPage from './pages/SubcategoriesSelectionPage';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './components/ProductDetailPage';
+
+// Hooks da API
+import { useCategorias, useSubcategorias } from './hooks/useApi';
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [productsPageFilters, setProductsPageFilters] = useState({});
+  
+  // Sistema de navegação do catálogo
+  const {
+    currentPage,
+    selectedCategory,
+    selectedSubcategory,
+    navigateToHome,
+    navigateToCategories,
+    navigateToSubcategories,
+    navigateToProducts,
+    getBreadcrumbPath
+  } = useCatalogNavigation();
+
+  // Hooks da API
+  const { categorias, loading: categoriasLoading, error: categoriasError } = useCategorias();
+  const { subcategorias, loading: subcategoriasLoading, error: subcategoriasError } = useSubcategorias();
 
   // Adiciona estilos customizados
   useCustomStyles();
 
+  // Filtrar subcategorias baseado na categoria selecionada
+  const getSubcategoriasFiltradas = () => {
+    if (!selectedCategory || !subcategorias.length) return [];
+    return subcategorias.filter(sub => 
+      sub.categoria?.toLowerCase() === selectedCategory.nome.toLowerCase()
+    );
+  };
+
+  // Handler para seleção de categoria
+  const handleCategorySelect = async (categoria) => {
+    setIsTransitioning(true);
+    
+    try {
+      // Verificar se a categoria tem subcategorias
+      const subcategoriasDisponiveis = subcategorias.filter(sub => 
+        sub.categoria?.toLowerCase() === categoria.nome.toLowerCase()
+      );
+
+      if (subcategoriasDisponiveis.length > 0) {
+        // Navegar para subcategorias
+        navigateToSubcategories(categoria);
+      } else {
+        // Ir direto para produtos
+        navigateToProducts(categoria);
+      }
+    } finally {
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
+  };
+
+  // Handler para seleção de subcategoria
+  const handleSubcategorySelect = async (subcategoria) => {
+    setIsTransitioning(true);
+    
+    try {
+      navigateToProducts(selectedCategory, subcategoria);
+    } finally {
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
+  };
+
+  // Handler para visualizar todos os produtos de uma categoria
+  const handleViewAllProducts = async () => {
+    setIsTransitioning(true);
+    
+    try {
+      navigateToProducts(selectedCategory);
+    } finally {
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
+  };
+
+  // Handler para clique em produto
   const handleProductClick = async (produto) => {
     setIsTransitioning(true);
     
     try {
-      // Se o produto vem apenas com dados básicos (lista), buscar dados completos
+      // Se o produto vem apenas com dados básicos, buscar dados completos
       let produtoCompleto = produto;
       
       if (!produto.descricaoCompleta || !produto.ingredientes) {
@@ -28,62 +104,37 @@ const App = () => {
       }
 
       setSelectedProduct(produtoCompleto);
-      setCurrentPage('product');
-      window.scrollTo(0, 0);
     } catch (error) {
       console.error('Erro ao carregar produto:', error);
-      // Em caso de erro, usar os dados básicos que temos
       setSelectedProduct(produto);
-      setCurrentPage('product');
-      window.scrollTo(0, 0);
     } finally {
       setIsTransitioning(false);
     }
   };
 
-  const handleBackToHome = () => {
+  // Handler para voltar dos detalhes do produto
+  const handleBackFromProduct = () => {
     setIsTransitioning(true);
     
     setTimeout(() => {
-      setCurrentPage('home');
       setSelectedProduct(null);
-      setProductsPageFilters({});
-      window.scrollTo(0, 0);
       setIsTransitioning(false);
     }, 300);
   };
 
-  const handleBackToProducts = () => {
-    setIsTransitioning(true);
-    
-    setTimeout(() => {
-      setCurrentPage('products');
-      setSelectedProduct(null);
-      window.scrollTo(0, 0);
-      setIsTransitioning(false);
-    }, 300);
-  };
-
-  const handleNavigateToProducts = (filters = {}) => {
-    setIsTransitioning(true);
-    setProductsPageFilters(filters);
-    
-    setTimeout(() => {
-      setCurrentPage('products');
-      setSelectedProduct(null);
-      window.scrollTo(0, 0);
-      setIsTransitioning(false);
-    }, 300);
-  };
-
-  // Renderização condicional baseada na página atual
-  if (currentPage === 'product') {
+  // Se estamos visualizando um produto específico
+  if (selectedProduct) {
     return (
       <>
         <ProductDetailPage 
           product={selectedProduct}
-          onBackToHome={handleBackToHome}
-          onBackToProducts={handleBackToProducts}
+          onBackToHome={() => {
+            handleBackFromProduct();
+            navigateToHome();
+          }}
+          onBackToProducts={() => {
+            handleBackFromProduct();
+          }}
           onProductClick={handleProductClick}
         />
         <LoadingOverlay 
@@ -94,28 +145,64 @@ const App = () => {
     );
   }
 
-  if (currentPage === 'products') {
-    return (
-      <>
-        <ProductsPage 
-          onProductClick={handleProductClick}
-          onBackToHome={handleBackToHome}
-          initialFilters={productsPageFilters}
-        />
-        <LoadingOverlay 
-          isVisible={isTransitioning} 
-          message="Carregando produtos..." 
-        />
-      </>
-    );
-  }
+  // Renderização baseada na página atual do catálogo
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'categories':
+        return (
+          <CategoriesSelectionPage
+            categorias={categorias}
+            onCategorySelect={handleCategorySelect}
+            onBackToHome={navigateToHome}
+            loading={categoriasLoading}
+            error={categoriasError}
+          />
+        );
+
+      case 'subcategories':
+        return (
+          <SubcategoriesSelectionPage
+            selectedCategory={selectedCategory}
+            subcategorias={getSubcategoriasFiltradas()}
+            onSubcategorySelect={handleSubcategorySelect}
+            onViewAllProducts={handleViewAllProducts}
+            onBackToCategories={navigateToCategories}
+            onBackToHome={navigateToHome}
+            loading={subcategoriasLoading}
+            error={subcategoriasError}
+          />
+        );
+
+      case 'products':
+        return (
+          <ProductsPage
+            onProductClick={handleProductClick}
+            onBackToHome={navigateToHome}
+            initialFilters={{
+              categoria: selectedCategory?.nome || 'Todos',
+              subcategoria: selectedSubcategory?.nome || 'Todas'
+            }}
+            breadcrumbPath={getBreadcrumbPath()}
+            onNavigateToCategories={navigateToCategories}
+            onNavigateToSubcategories={() => navigateToSubcategories(selectedCategory)}
+          />
+        );
+
+      default: // 'home'
+        return (
+          <CatalogHomePage
+            onNavigateToCategories={navigateToCategories}
+            categorias={categorias}
+            loading={categoriasLoading}
+            error={categoriasError}
+          />
+        );
+    }
+  };
 
   return (
     <>
-      <HomePage 
-        onProductClick={handleProductClick}
-        onNavigateToProducts={handleNavigateToProducts}
-      />
+      {renderCurrentPage()}
       <LoadingOverlay 
         isVisible={isTransitioning} 
         message="Carregando..." 
