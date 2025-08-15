@@ -26,23 +26,31 @@ const ProductCard = ({ produto, onProductClick }) => {
                 src={produto.imagemMedia || produto.imagem}
                 alt={produtoNome}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                onLoad={() => {
+                }}
                 onError={(e) => {
                   // Fallback para placeholder colorido se a imagem falhar
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
                 }}
               />
-            ) : null}
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-lg font-serif text-gray-600 bg-gray-100">
+                {nomeParaPlaceholder}
+              </div>
+            )}
             <div 
               className="w-full h-full flex items-center justify-center text-lg font-serif text-gray-600"
               style={{ 
-                backgroundColor: produto.imagem ? 'transparent' : '#F0F8FF',
+                backgroundColor: '#F0F8FF',
                 display: (produto.imagemMedia || produto.imagem) ? 'none' : 'flex'
               }}
             >
               {nomeParaPlaceholder}
             </div>
           </div>
+          
+          {/* Badges e overlays */}
           <div className="absolute top-3 left-3 bg-amber-200 text-amber-800 px-2 py-1 rounded-full text-xs font-medium">
             {produtoCategoria}
           </div>
@@ -57,6 +65,7 @@ const ProductCard = ({ produto, onProductClick }) => {
             </div>
           )}
         </div>
+        
         <div className="p-3 flex-none">
           <h4 className="text-sm font-semibold text-amber-800 mb-1 line-clamp-1">{produtoNome}</h4>
           <p className="text-amber-600 text-xs mb-2 line-clamp-2">{produtoDescricao}</p>
@@ -66,6 +75,7 @@ const ProductCard = ({ produto, onProductClick }) => {
               <span className="text-xs text-gray-500 line-through">{produtoPreco}</span>
             )}
           </div>
+          
           {/* Mostrar cores disponíveis se for produto multicolor */}
           {produto.tipo === 'MULTI_COLOR' && produto.cores && Object.keys(produto.cores).length > 0 && (
             <div className="flex gap-1 mt-2">

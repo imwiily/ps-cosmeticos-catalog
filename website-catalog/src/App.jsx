@@ -1,4 +1,4 @@
-// src/App.jsx - Versão Final com Sistema de Catálogo Hierárquico
+// src/App.jsx - CORREÇÃO do filtro de subcategorias
 import React, { useState } from 'react';
 import { LoadingOverlay } from './components/ui/LoadingComponents';
 import { useCustomStyles } from './utils/helpers';
@@ -37,12 +37,35 @@ const App = () => {
   // Adiciona estilos customizados
   useCustomStyles();
 
-  // Filtrar subcategorias baseado na categoria selecionada
+  // ✅ CORRIGIDO: Filtrar subcategorias baseado na categoria selecionada
   const getSubcategoriasFiltradas = () => {
-    if (!selectedCategory || !subcategorias.length) return [];
-    return subcategorias.filter(sub => 
-      sub.categoria?.toLowerCase() === selectedCategory.nome.toLowerCase()
-    );
+    if (!selectedCategory || !subcategorias.length) {
+      return [];
+    }
+
+    const subcategoriasFiltradas = subcategorias.filter(sub => {
+      // ✅ CORREÇÃO: Verificar se sub.categoria existe e tem o campo nome
+      if (!sub || !sub.categoria) {
+        return false;
+      }
+
+      // ✅ CORREÇÃO: Verificar se categoria.nome existe antes de chamar toLowerCase
+      const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
+      const selectedCategoryNome = selectedCategory.nome || '';
+
+      if (!categoriaNome || !selectedCategoryNome) {
+        return false;
+      }
+
+      const match = categoriaNome.toLowerCase() === selectedCategoryNome.toLowerCase();
+      
+      if (match) {
+      }
+      
+      return match;
+    });
+
+    return subcategoriasFiltradas;
   };
 
   // Handler para seleção de categoria
@@ -50,10 +73,25 @@ const App = () => {
     setIsTransitioning(true);
     
     try {
+      // ✅ CORREÇÃO: Verificar se subcategorias estão carregadas antes de filtrar
+      if (subcategoriasLoading) {
+        // Se subcategorias ainda estão carregando, ir direto para produtos
+        navigateToProducts(categoria);
+        return;
+      }
+
       // Verificar se a categoria tem subcategorias
-      const subcategoriasDisponiveis = subcategorias.filter(sub => 
-        sub.categoria?.toLowerCase() === categoria.nome.toLowerCase()
-      );
+      const subcategoriasDisponiveis = subcategorias.filter(sub => {
+        // ✅ CORREÇÃO: Verificação mais robusta
+        if (!sub || !sub.categoria) return false;
+        
+        const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
+        const selectedCategoryNome = categoria.nome || '';
+        
+        return categoriaNome && selectedCategoryNome && 
+               categoriaNome.toLowerCase() === selectedCategoryNome.toLowerCase();
+      });
+
 
       if (subcategoriasDisponiveis.length > 0) {
         // Navegar para subcategorias
@@ -62,6 +100,9 @@ const App = () => {
         // Ir direto para produtos
         navigateToProducts(categoria);
       }
+    } catch (error) {
+      // Em caso de erro, ir direto para produtos
+      navigateToProducts(categoria);
     } finally {
       setTimeout(() => setIsTransitioning(false), 300);
     }
@@ -105,7 +146,6 @@ const App = () => {
 
       setSelectedProduct(produtoCompleto);
     } catch (error) {
-      console.error('Erro ao carregar produto:', error);
       setSelectedProduct(produto);
     } finally {
       setIsTransitioning(false);

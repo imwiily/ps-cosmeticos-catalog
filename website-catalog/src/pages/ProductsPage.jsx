@@ -34,21 +34,43 @@ const ProductsPage = ({ onProductClick, onBackToHome, initialFilters = {} }) => 
     loading: subcategoriasLoading
   } = useSubcategorias();
 
-  // Filtrar subcategorias baseado na categoria ativa
+  // ✅ CORRIGIDO: Filtrar subcategorias baseado na categoria ativa
   const subcategoriasFiltradas = subcategorias.filter(sub => {
     // Só mostra subcategorias se uma categoria específica estiver selecionada (não "Todos")
     if (categoriaAtiva === "Todos") return false;
-    return sub.categoria?.toLowerCase() === categoriaAtiva.toLowerCase();
+    
+    // ✅ CORREÇÃO: Verificação robusta das propriedades
+    if (!sub || !sub.categoria) {
+      console.warn('⚠️ Subcategoria sem categoria:', sub);
+      return false;
+    }
+
+    const categoriaNome = sub.categoria.nome || sub.categoria.name || '';
+    
+    if (!categoriaNome) {
+      console.warn('⚠️ Nome de categoria faltando na subcategoria:', sub);
+      return false;
+    }
+
+    const match = categoriaNome.toLowerCase() === categoriaAtiva.toLowerCase();
+    
+    if (match) {
+      console.log('✅ Subcategoria filtrada:', sub.nome, 'para categoria:', categoriaAtiva);
+    }
+    
+    return match;
   });
 
   // Handler para mudança de categoria (limpa subcategoria)
   const handleCategoriaChange = (categoria) => {
+    console.log('🗂️ Mudando categoria para:', categoria);
     setCategoriaAtiva(categoria);
     setSubcategoriaAtiva("Todas"); // Reset subcategoria quando muda categoria
   };
 
   // Handler para mudança de subcategoria
   const handleSubcategoriaChange = (subcategoria) => {
+    console.log('🏷️ Mudando subcategoria para:', subcategoria);
     setSubcategoriaAtiva(subcategoria);
   };
 
@@ -366,7 +388,7 @@ const ProductsPage = ({ onProductClick, onBackToHome, initialFilters = {} }) => 
             )}
 
             {/* Error State */}
-            {produtosError && (
+            {produtosError && !produtosLoading && (
               <ErrorMessage 
                 error={produtosError} 
                 onRetry={() => window.location.reload()}
@@ -379,15 +401,15 @@ const ProductsPage = ({ onProductClick, onBackToHome, initialFilters = {} }) => 
               <EmptyState 
                 title="Nenhum produto encontrado"
                 description={
-                  searchTerm 
-                    ? `Não encontramos produtos para "${searchTerm}". Tente termos diferentes.`
-                    : "Não há produtos disponíveis para os filtros selecionados."
+                  categoriaAtiva !== "Todos" || subcategoriaAtiva !== "Todas"
+                    ? `Não há produtos disponíveis para os filtros selecionados. Tente outras opções.`
+                    : "Não há produtos disponíveis no momento."
                 }
-                icon="🔍"
+                icon="📦"
               />
             )}
 
-            {/* Products Grid/List */}
+            {/* Products Grid */}
             {!produtosLoading && !produtosError && produtosFiltrados.length > 0 && (
               <div 
                 id="produtos-grid"
@@ -397,13 +419,22 @@ const ProductsPage = ({ onProductClick, onBackToHome, initialFilters = {} }) => 
                     : 'grid-cols-1'
                 }`}
               >
-                {produtosFiltrados.map((produto) => (
+                {produtosFiltrados.slice(0, 12).map((produto) => (
                   <SafeProductCard 
                     key={produto?.id || Math.random()}
                     produto={produto}
                     onProductClick={onProductClick}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* Load More Button (if needed) */}
+            {!produtosLoading && !produtosError && produtosFiltrados.length > 0 && produtosFiltrados.length % 12 === 0 && (
+              <div className="text-center mt-12">
+                <button className="bg-gradient-to-r from-amber-200 to-rose-200 text-amber-800 px-8 py-3 rounded-full hover:from-amber-300 hover:to-rose-300 transition-all font-medium">
+                  Carregar Mais Produtos
+                </button>
               </div>
             )}
           </div>

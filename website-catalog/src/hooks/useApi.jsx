@@ -1,8 +1,8 @@
-// src/hooks/useApi.js
+// src/hooks/useApi.jsx - VERSÃO CORRIGIDA
 import { useState, useEffect } from 'react';
 import apiService from '../services/api';
 
-// Hook para produtos com suporte a subcategorias
+// ✅ CORRIGIDO: Hook para produtos com suporte a subcategorias
 export const useProdutos = (categoria = 'Todos', subcategoria = 'Todas', page = 0, size = 12) => {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,27 +14,55 @@ export const useProdutos = (categoria = 'Todos', subcategoria = 'Todas', page = 
       try {
         setLoading(true);
         setError(null);
-        
+                
         let response;
+        
         if (categoria === 'Todos' && subcategoria === 'Todas') {
-          response = await apiService.getProdutos(page, size);
+          // ✅ CORRIGIDO: Buscar todos os produtos com category='todos'
+          response = await apiService.getProdutos(page, size, 'todos');
         } else if (categoria !== 'Todos' && subcategoria === 'Todas') {
+          // ✅ CORRIGIDO: Buscar produtos por categoria
           response = await apiService.getProdutosPorCategoria(categoria, page, size);
         } else if (subcategoria !== 'Todas') {
+          // ✅ CORRIGIDO: Buscar produtos por subcategoria
           response = await apiService.getProdutosPorSubcategoria(categoria, subcategoria, page, size);
         } else {
           response = await apiService.getProdutosPorCategoria(categoria, page, size);
         }
 
-        const produtosTransformados = response.content
-          .map(produto => apiService.transformProdutoData(produto))
-          .filter(produto => produto !== null); // Remove produtos null/inválidos
+        console.log('📦 Resposta da API:', response);
 
+        if (!response.content) {
+          console.warn('⚠️ API retornou resposta sem content:', response);
+          setProdutos([]);
+          setPageInfo({});
+          return;
+        }
+
+        // ✅ CORRIGIDO: Transformar produtos e filtrar inválidos
+        const produtosTransformados = response.content
+          .map(produto => {
+            console.log('🔄 Transformando produto:', produto);
+            return apiService.transformProdutoData(produto);
+          })
+          .filter(produto => {
+            if (produto === null) {
+              console.warn('⚠️ Produto nulo após transformação');
+              return false;
+            }
+            return true;
+          });
+
+        console.log('✅ Produtos transformados:', produtosTransformados.length);
+        
         setProdutos(produtosTransformados);
-        setPageInfo(response.page);
+        setPageInfo(response.page || {});
+        
       } catch (err) {
+        console.error('❌ Erro ao carregar produtos:', err);
         setError(err.message);
-        console.error('Erro ao carregar produtos:', err);
+        setProdutos([]);
+        setPageInfo({});
       } finally {
         setLoading(false);
       }
@@ -46,7 +74,7 @@ export const useProdutos = (categoria = 'Todos', subcategoria = 'Todas', page = 
   return { produtos, loading, error, pageInfo };
 };
 
-// Hook para categorias
+// ✅ CORRIGIDO: Hook para categorias
 export const useCategorias = () => {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,10 +86,15 @@ export const useCategorias = () => {
         setLoading(true);
         setError(null);
         
+        console.log('🗂️ Buscando categorias...');
+        
         const response = await apiService.getCategorias();
-        const categoriasTransformadas = response.map(categoria =>
-          apiService.transformCategoriaData(categoria)
-        );
+        
+        console.log('📋 Categorias da API:', response);
+        
+        const categoriasTransformadas = response.map(categoria => {
+          return apiService.transformCategoriaData(categoria);
+        });
 
         // Adicionar categoria "Todos" no início
         const categoriasComTodos = [
@@ -77,10 +110,13 @@ export const useCategorias = () => {
           ...categoriasTransformadas
         ];
 
+        console.log('✅ Categorias processadas:', categoriasComTodos.length);
         setCategorias(categoriasComTodos);
+        
       } catch (err) {
+        console.error('❌ Erro ao carregar categorias:', err);
         setError(err.message);
-        console.error('Erro ao carregar categorias:', err);
+        setCategorias([]);
       } finally {
         setLoading(false);
       }
@@ -92,7 +128,7 @@ export const useCategorias = () => {
   return { categorias, loading, error };
 };
 
-// Hook para produto individual
+// ✅ CORRIGIDO: Hook para produto individual
 export const useProduto = (id) => {
   const [produto, setProduto] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -109,13 +145,25 @@ export const useProduto = (id) => {
         setLoading(true);
         setError(null);
         
-        const response = await apiService.getProdutoPorId(id);
-        const produtoTransformado = apiService.transformProdutoData(response);
+        console.log('🛍️ Buscando produto:', id);
         
-        setProduto(produtoTransformado);
+        const response = await apiService.getProdutoPorId(id);
+        
+        console.log('📦 Produto da API:', response);
+        
+        if (response) {
+          const produtoTransformado = apiService.transformProdutoData(response);
+          console.log('✅ Produto transformado:', produtoTransformado);
+          setProduto(produtoTransformado);
+        } else {
+          console.warn('⚠️ Produto não encontrado');
+          setProduto(null);
+        }
+        
       } catch (err) {
+        console.error('❌ Erro ao carregar produto:', err);
         setError(err.message);
-        console.error('Erro ao carregar produto:', err);
+        setProduto(null);
       } finally {
         setLoading(false);
       }
@@ -127,7 +175,7 @@ export const useProduto = (id) => {
   return { produto, loading, error };
 };
 
-// Hook para produtos relacionados
+// ✅ CORRIGIDO: Hook para produtos relacionados
 export const useProdutosRelacionados = (id) => {
   const [produtosRelacionados, setProdutosRelacionados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,15 +192,24 @@ export const useProdutosRelacionados = (id) => {
         setLoading(true);
         setError(null);
         
-        const response = await apiService.getProdutosRelacionados(id);
-        const produtosTransformados = response.content.map(produto =>
-          apiService.transformProdutoData(produto)
-        );
+        console.log('🔗 Buscando produtos relacionados para:', id);
         
+        // ✅ CORRIGIDO: Usar método atualizado
+        const response = await apiService.getProdutosRelacionados(id, 'todos');
+        
+        console.log('📦 Produtos relacionados da API:', response);
+        
+        const produtosTransformados = response.content.map(produto => {
+          return apiService.transformProdutoData(produto);
+        }).filter(produto => produto !== null);
+        
+        console.log('✅ Produtos relacionados processados:', produtosTransformados.length);
         setProdutosRelacionados(produtosTransformados);
+        
       } catch (err) {
+        console.error('❌ Erro ao carregar produtos relacionados:', err);
         setError(err.message);
-        console.error('Erro ao carregar produtos relacionados:', err);
+        setProdutosRelacionados([]);
       } finally {
         setLoading(false);
       }
@@ -164,7 +221,7 @@ export const useProdutosRelacionados = (id) => {
   return { produtosRelacionados, loading, error };
 };
 
-// Hook para subcategorias
+// ✅ CORRIGIDO: Hook para subcategorias
 export const useSubcategorias = (categoriaId = null) => {
   const [subcategorias, setSubcategorias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +233,8 @@ export const useSubcategorias = (categoriaId = null) => {
         setLoading(true);
         setError(null);
         
+        console.log('🏷️ Buscando subcategorias...');
+        
         let response;
         if (categoriaId) {
           response = await apiService.getSubcategoriasPorCategoria(categoriaId);
@@ -183,20 +242,20 @@ export const useSubcategorias = (categoriaId = null) => {
           response = await apiService.getSubcategorias();
         }
 
-        // Transformar os dados das subcategorias
-        const subcategoriasTransformadas = response.map(subcategoria => ({
-          id: subcategoria.id,
-          nome: subcategoria.nome || subcategoria.name,
-          categoria: subcategoria.categoria?.nome || subcategoria.category?.nome,
-          slug: subcategoria.slug,
-          descricao: subcategoria.descricao || subcategoria.description,
-          ativo: subcategoria.ativo !== undefined ? subcategoria.ativo : subcategoria.active
-        }));
+        console.log('📋 Subcategorias da API:', response);
+
+        // ✅ CORRIGIDO: Transformar os dados das subcategorias
+        const subcategoriasTransformadas = response.map(subcategoria => {
+          return apiService.transformSubcategoriaData(subcategoria);
+        });
         
+        console.log('✅ Subcategorias processadas:', subcategoriasTransformadas.length);
         setSubcategorias(subcategoriasTransformadas);
+        
       } catch (err) {
+        console.error('❌ Erro ao carregar subcategorias:', err);
         setError(err.message);
-        console.error('Erro ao carregar subcategorias:', err);
+        setSubcategorias([]);
       } finally {
         setLoading(false);
       }
